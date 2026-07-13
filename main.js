@@ -53,7 +53,7 @@ client.on(Events.InteractionCreate, async (interact) =>{
         interact.reply({content: "A továbbiak a privát üzenetek (DM) közt.", flags: MessageFlags.Ephemeral});
 
         //This is if you use screen. If you want to host this bot for yourself, and use something else, change it. The README gives instructions on how to use screen.
-        exec(`screen -S minecraft -X stuff "whitelist add $(${mcName})"`, (error, stdout, stderr) => {
+        exec(`screen -S minecraft -X stuff "whitelist add ${mcName}\n"`, (error, stdout, stderr) => {
             if (error) {
                 console.log(`error: ${error.message}`);
                 return;
