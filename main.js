@@ -1,4 +1,5 @@
 require("dotenv").config();
+const {exec} = require("child_process");
 const { Client, Events, GatewayIntentBits, BaseChannel, TextChannel, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ModalBuilder, LabelBuilder, TextInputBuilder, TextInputStyle, MessageFlags } = require('discord.js');
 const client = new Client({intents:[GatewayIntentBits.Guilds]});
 
@@ -24,6 +25,11 @@ client.once(Events.ClientReady, (clientready) => {
 
 client.on(Events.InteractionCreate, async (interact) =>{
     if(interact.isButton()){
+        const rRole = interact.guild.roles.cache.find(roles => roles.id == process.env.REGROLE);
+        if(interact.member.roles.cache.some(role => role == rRole)){
+            await interact.reply({content: "Már felkerültél a fehérlistára. Ha valami probléma van, keresd fel" + ` <@${process.env.OWNERID}>-t.`, flags: MessageFlags.Ephemeral});
+            return;
+        }
         const wlModal = new ModalBuilder().setCustomId("wlModal").setTitle("Fehérlista-whitlist");
         const wlInput = new TextInputBuilder()
             .setCustomId("wlInput")
@@ -33,8 +39,8 @@ client.on(Events.InteractionCreate, async (interact) =>{
             .setLabel("Minecraft player név")
             .setTextInputComponent(wlInput);
         wlModal.addLabelComponents(nameLabel);
-        interact.reply({content: "Töltsd ki a lapot.", flags: MessageFlags.Ephemeral});
         await interact.showModal(wlModal);
+        interact.member.roles.add(rRole);
     }
     if (interact.isModalSubmit()){
         const mcName = interact.fields.getTextInputValue("wlInput");
@@ -45,6 +51,18 @@ client.on(Events.InteractionCreate, async (interact) =>{
             .setDescription("Ez a jóváhagyó üzenet, hogy a " + `${mcName} nevű fiókot feladtuk a fehérlistára. Biztonsági okok miatt, a többi csatorna más rang mögött van, azzal <@${process.env.OWNERID}>-t keresd meg, és szólj neki, hogy ki vagy.` + `\n \n For reviewers: This is the end of the line for your testing. For obvious reasons, I won't let y'all up on my friends' smp. I will remove your ${mcName} profile from records afterwards.`);
         interact.user.send({embeds: [confEmbed]});
         interact.reply({content: "A továbbiak a privát üzenetek (DM) közt.", flags: MessageFlags.Ephemeral});
+
+        //This is if you use screen. If you want to host this bot for yourself, and use something else, change it. The README gives instructions on how to use screen.
+        exec(`screen -S minecraft -X stuff "whitelist add $(${mcName})"`, (error, stdout, stderr) => {
+            if (error) {
+                console.log(`error: ${error.message}`);
+                return;
+            }
+            if (stderr) {
+                console.log(`stderr: ${stderr}`);
+                return;
+            }
+        });
     }
 });
 client.login(process.env.TOKEN);
